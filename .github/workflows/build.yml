@@ -25,7 +25,7 @@ jobs:
         
     - name: Build with PyInstaller
       run: |
-        pyinstaller --noconfirm --onefile --windowed --name "RaceTimerPro_Legendary" --icon="icon.ico" --add-data "icon.png;." --add-data "icon.ico;." race_timer_app.py
+        pyinstaller --noconfirm --onefile --windowed --name "RaceTimerPro_Legendary" --icon="icon.ico" --add-data "icon.ico;." race_timer_app.py
         
     - name: Upload Artifact
       uses: actions/upload-artifact@v4

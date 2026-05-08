@@ -8,7 +8,7 @@
 
 import tkinter as tk
 from tkinter import ttk, messagebox
-import threading, time, csv, os, winsound
+import threading, time, csv, os, sys, winsound
 from datetime import datetime
 from PIL import Image, ImageTk
 
@@ -43,6 +43,14 @@ C = {
 
 RACER_COLORS = ["#00D1FF","#00FF85","#9066FF","#FFB020","#FF3A3A","#06C8D8","#FF7A30"]
 
+def resource_path(relative_path):
+    """ الحصول على المسار الصحيح للملف سواء في وضع التطوير أو بعد البناء (PyInstaller) """
+    try:
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, relative_path)
+
 def fmt(ms: int) -> str:
     return f"{ms//60000:02d}:{(ms%60000)//1000:02d}.{ms%1000:03d}"
 
@@ -61,7 +69,7 @@ class App:
         self.root.configure(bg=C["bg"])
 
         # محاولة تحميل الأيقونة
-        self.icon_path = "icon.ico"
+        self.icon_path = resource_path("icon.ico")
         try:
             if os.path.exists(self.icon_path):
                 self.root.iconbitmap(self.icon_path)
