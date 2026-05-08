@@ -324,8 +324,12 @@ class App:
         
         br = tk.Frame(main, bg=C["bg"])
         br.pack(fill="x", pady=20)
-        btn(br, "▷ محاكاة", self._demo_curr, C["dim"], C["accent"], px=20).pack(side="left")
-        btn(br, "⟳ إعادة", self._restart_race, C["dim"], C["amber"], px=20).pack(side="left", padx=10)
+        
+        if not self.connected:
+            btn(br, "▶ بدء (يدوي)", self._on_start, C["dim"], C["green"], px=15).pack(side="left")
+            btn(br, "■ إنهاء (يدوي)", self._demo_stop, C["dim"], C["red"], px=15).pack(side="left", padx=10)
+            
+        btn(br, "⟳ إعادة", self._restart_race, C["dim"], C["amber"], px=15).pack(side="left")
         btn(br, "← إنهاء", self._page_setup, C["dim"], C["red"], px=20).pack(side="right")
         
         self._activate(0)
@@ -360,14 +364,21 @@ class App:
         self.racers[self.curr]["ms"] = ms
         self.racers[self.curr]["state"] = "done"
         self._save_data()
-        winsound.Beep(1000, 200)
+        
+        # إصدار صوت مميز عند انتهاء كل جولة
+        try:
+            winsound.Beep(1200, 300)
+            winsound.Beep(1600, 400)
+        except:
+            pass
+            
         self.root.after(2000, lambda: self._activate(self.curr + 1))
 
     def _restart_race(self): self._activate(self.curr)
-    def _demo_curr(self):
-        self._on_start()
-        d = 3000 + int(time.time()*1000)%5000
-        self.root.after(d, lambda: self._on_stop(d))
+    def _demo_stop(self):
+        if not self.racing: return
+        d = int((time.time() - self.t0) * 1000)
+        self._on_stop(d)
 
     def _page_results(self):
         self._clear()
