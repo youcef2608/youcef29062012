@@ -22,7 +22,7 @@ except ImportError:
 # ═══════════════════════════════════════════════
 #  الألوان والخطوط (Legendary Theme)
 # ═══════════════════════════════════════════════
-C = {
+DARK_THEME = {
     "bg":      "#05070A",
     "panel":   "#0A0F16",
     "card":    "#111823",
@@ -39,9 +39,30 @@ C = {
     "gold":    "#FFD700",
     "text":    "#F1F5F9",
     "white":   "#FFFFFF",
+    "racer_colors": ["#00D1FF","#00FF85","#9066FF","#FFB020","#FF3A3A","#06C8D8","#FF7A30"]
 }
 
-RACER_COLORS = ["#00D1FF","#00FF85","#9066FF","#FFB020","#FF3A3A","#06C8D8","#FF7A30"]
+LIGHT_THEME = {
+    "bg":      "#F0F4F8",
+    "panel":   "#E2E8F0",
+    "card":    "#FFFFFF",
+    "card2":   "#F8FAFC",
+    "border":  "#CBD5E1",
+    "accent":  "#0284C7",
+    "green":   "#16A34A",
+    "green2":  "#15803D",
+    "red":     "#DC2626",
+    "amber":   "#D97706",
+    "purple":  "#7C3AED",
+    "muted":   "#64748B",
+    "dim":     "#CBD5E1",
+    "gold":    "#D97706",
+    "text":    "#0F172A",
+    "white":   "#FFFFFF",
+    "racer_colors": ["#0284C7","#16A34A","#7C3AED","#D97706","#DC2626","#0891B2","#EA580C"]
+}
+
+C = DARK_THEME.copy()
 
 def resource_path(relative_path):
     """ الحصول على المسار الصحيح للملف سواء في وضع التطوير أو بعد البناء (PyInstaller) """
@@ -65,6 +86,8 @@ def btn(parent, text, cmd, bg, fg, px=12, py=7, font_size=10):
 class App:
     def __init__(self, root: tk.Tk):
         self.root = root
+        self.is_dark_mode = True
+        self.current_page = None
         self.root.title("Nabtakir - نبتكر")
         self.root.configure(bg=C["bg"])
 
@@ -130,30 +153,37 @@ class App:
             print(f"Error saving data: {e}")
 
     def _topbar(self):
-        bar = tk.Frame(self.root, bg=C["panel"], height=60)
-        bar.pack(fill="x")
-        bar.pack_propagate(False)
+        self.top_bar = tk.Frame(self.root, bg=C["panel"], height=60)
+        self.top_bar.pack(fill="x")
+        self.top_bar.pack_propagate(False)
 
-        tk.Label(bar, text="  ⏱  NABTAKIR - نبتكر",
+        self.lbl_title = tk.Label(self.top_bar, text="  ⏱  NABTAKIR - نبتكر",
                  font=("Segoe UI", 16, "bold"),
-                 bg=C["panel"], fg=C["accent"]).pack(side="left", pady=14)
+                 bg=C["panel"], fg=C["accent"])
+        self.lbl_title.pack(side="left", pady=14)
 
-        self.lbl_conn = tk.Label(bar, text="● غير متصل",
+        self.btn_theme = tk.Button(self.top_bar, text="☀ نهار", font=("Segoe UI", 11, "bold"),
+                                   bg=C["panel"], fg=C["text"], relief="flat",
+                                   activebackground=C["panel"], activeforeground=C["accent"], bd=0, cursor="hand2",
+                                   command=self._toggle_theme)
+        self.btn_theme.pack(side="right", padx=15)
+
+        self.lbl_conn = tk.Label(self.top_bar, text="● غير متصل",
                                   font=("Segoe UI", 10),
                                   bg=C["panel"], fg=C["red"])
-        self.lbl_conn.pack(side="right", padx=20)
+        self.lbl_conn.pack(side="right", padx=10)
 
-        self.lbl_port_info = tk.Label(bar, text="",
+        self.lbl_port_info = tk.Label(self.top_bar, text="",
                                        font=("Consolas", 10),
                                        bg=C["panel"], fg=C["muted"])
         self.lbl_port_info.pack(side="right", padx=10)
 
     def _statusbar(self):
         self.sb_var = tk.StringVar(value="  جاهز للبدء")
-        bar = tk.Frame(self.root, bg=C["panel"], height=30)
-        bar.pack(fill="x", side="bottom")
-        bar.pack_propagate(False)
-        self.sb_lbl = tk.Label(bar, textvariable=self.sb_var,
+        self.bot_bar = tk.Frame(self.root, bg=C["panel"], height=30)
+        self.bot_bar.pack(fill="x", side="bottom")
+        self.bot_bar.pack_propagate(False)
+        self.sb_lbl = tk.Label(self.bot_bar, textvariable=self.sb_var,
                                 font=("Segoe UI", 9),
                                 bg=C["panel"], fg=C["muted"], anchor="w")
         self.sb_lbl.pack(fill="x", padx=12, pady=5)
@@ -161,6 +191,30 @@ class App:
     def _status(self, msg, color=None):
         self.sb_var.set(f"  {msg}")
         self.sb_lbl.config(fg=color or C["muted"])
+
+    def _toggle_theme(self):
+        if getattr(self, 'racing', False):
+            messagebox.showinfo("تنبيه", "لا يمكن تغيير المظهر أثناء جريان المؤقت.")
+            return
+
+        self.is_dark_mode = not getattr(self, 'is_dark_mode', True)
+        theme = DARK_THEME if self.is_dark_mode else LIGHT_THEME
+        for k, v in theme.items():
+            C[k] = v
+
+        self.root.configure(bg=C["bg"])
+        self.top_bar.configure(bg=C["panel"])
+        self.lbl_title.configure(bg=C["panel"], fg=C["accent"])
+        self.lbl_conn.configure(bg=C["panel"])
+        self.lbl_port_info.configure(bg=C["panel"])
+        self.btn_theme.configure(bg=C["panel"], fg=C["text"], text="☀ نهار" if self.is_dark_mode else "🌙 ليل")
+        self.bot_bar.configure(bg=C["panel"])
+        self.sb_lbl.configure(bg=C["panel"], fg=C["muted"])
+        self.frame.configure(bg=C["bg"])
+        
+        self._style()
+        if getattr(self, 'current_page', None):
+            self.current_page()
 
     def _clear(self):
         for w in self.frame.winfo_children():
@@ -185,6 +239,7 @@ class App:
               foreground=[("selected", C["bg"])])
 
     def _page_port(self):
+        self.current_page = self._page_port
         self._clear()
         outer = tk.Frame(self.frame, bg=C["bg"])
         outer.place(relx=.5, rely=.5, anchor="center")
@@ -248,6 +303,7 @@ class App:
         self._page_setup()
 
     def _page_setup(self):
+        self.current_page = self._page_setup
         self._clear()
         main = tk.Frame(self.frame, bg=C["bg"])
         main.pack(fill="both", expand=True, padx=50, pady=35)
@@ -270,7 +326,7 @@ class App:
         bot = tk.Frame(main, bg=C["bg"])
         bot.pack(fill="x")
         btn(bot, "← رجوع", self._page_port, C["dim"], C["muted"], px=15).pack(side="left")
-        self.btn_go = btn(bot, "  ابدأ السباق  ▶", self._page_race, C["dim"], C["muted"], px=32, py=12, font_size=13)
+        self.btn_go = btn(bot, "  ابدأ السباق  ▶", self._init_race, C["dim"], C["muted"], px=32, py=12, font_size=13)
         self.btn_go.pack(side="right")
 
     def _add_racer(self):
@@ -288,7 +344,7 @@ class App:
             tk.Label(self.list_fr, text="لا يوجد متسابقين", bg=C["card"], fg=C["muted"], font=("Segoe UI", 12)).pack(pady=40)
             return
         for i, r in enumerate(self.racers):
-            col = RACER_COLORS[i % len(RACER_COLORS)]
+            col = C["racer_colors"][i % len(C["racer_colors"])]
             row = tk.Frame(self.list_fr, bg=C["card2"], pady=5)
             row.pack(fill="x", padx=10, pady=2)
             tk.Label(row, text=f" {i+1} ", bg=col, fg=C["bg"], font=("Consolas", 12, "bold"), width=3).pack(side="left")
@@ -301,11 +357,15 @@ class App:
         self._render_list()
         if not self.racers: self.btn_go.config(bg=C["dim"], fg=C["muted"])
 
-    def _page_race(self):
-        self._clear()
+    def _init_race(self):
         self.curr = 0; self.racing = False; self.armed = False
         for r in self.racers: r["ms"] = None; r["state"] = "waiting"
         self._save_data()
+        self._page_race()
+
+    def _page_race(self):
+        self.current_page = self._page_race
+        self._clear()
         
         main = tk.Frame(self.frame, bg=C["bg"])
         main.pack(fill="both", expand=True, padx=40, pady=30)
@@ -332,13 +392,13 @@ class App:
         btn(br, "⟳ إعادة", self._restart_race, C["dim"], C["amber"], px=15).pack(side="left")
         btn(br, "← إنهاء", self._page_setup, C["dim"], C["red"], px=20).pack(side="right")
         
-        self._activate(0)
+        self._activate(self.curr)
 
     def _activate(self, idx):
         if idx >= len(self.racers): self._page_results(); return
         self.curr = idx; self.racing = False; self.armed = True
         self.racers[idx]["state"] = "ready"
-        col = RACER_COLORS[idx % len(RACER_COLORS)]
+        col = C["racer_colors"][idx % len(C["racer_colors"])]
         self.lbl_name.config(text=self.racers[idx]["name"], fg=col)
         self.lbl_t.config(text="00:00.000", fg=C["text"])
         self.c_bar.itemconfig(self._bar, fill=col)
@@ -365,12 +425,13 @@ class App:
         self.racers[self.curr]["state"] = "done"
         self._save_data()
         
-        # إصدار صوت مميز عند انتهاء كل جولة
-        try:
-            winsound.Beep(1200, 300)
-            winsound.Beep(1600, 400)
-        except:
-            pass
+        # إصدار صوت مميز عند انتهاء كل جولة في مسار منفصل لتجنب التقطيع
+        def beep():
+            try:
+                winsound.Beep(1200, 200)
+                winsound.Beep(1600, 300)
+            except: pass
+        threading.Thread(target=beep, daemon=True).start()
             
         self.root.after(2000, lambda: self._activate(self.curr + 1))
 
@@ -381,20 +442,58 @@ class App:
         self._on_stop(d)
 
     def _page_results(self):
+        self.current_page = self._page_results
         self._clear()
         done = sorted([r for r in self.racers if r["ms"]], key=lambda x: x["ms"])
+        
+        # صوت الاحتفال بالنتائج
+        def fanfare():
+            try:
+                for f, d in [(523,150),(659,150),(784,150),(1047,400)]:
+                    if f: winsound.Beep(f, d)
+                    else: time.sleep(d/1000)
+            except: pass
+        threading.Thread(target=fanfare, daemon=True).start()
+
         main = tk.Frame(self.frame, bg=C["bg"], padx=50, pady=40)
         main.pack(fill="both", expand=True)
-        tk.Label(main, text="🏆 النتائج", font=("Segoe UI", 32, "bold"), bg=C["bg"], fg=C["gold"]).pack(anchor="w")
+        
+        # أنيميشن البطل (المركز الأول)
+        if done:
+            winner = done[0]
+            self.lbl_win = tk.Label(main, text=f"🏆 البطل: {winner['name']} 🏆", font=("Segoe UI", 36, "bold"), bg=C["bg"], fg=C["gold"])
+            self.lbl_win.pack(pady=(0, 20))
+            self._animate_winner()
+            
+        tk.Label(main, text="لوحة النتائج", font=("Segoe UI", 24, "bold"), bg=C["bg"], fg=C["text"]).pack(anchor="w", pady=(0, 20))
+        
+        medals = ["🥇", "🥈", "🥉"]
+        colors = [C["gold"], "#C0C0C0", "#CD7F32"] # ذهبي، فضي، برونزي
         
         for i, r in enumerate(done):
             row = tk.Frame(main, bg=C["card"], pady=10)
             row.pack(fill="x", pady=5)
-            tk.Label(row, text=f"#{i+1}", font=("Segoe UI", 18, "bold"), bg=C["card"], width=5).pack(side="left")
-            tk.Label(row, text=r["name"], font=("Segoe UI", 18), bg=C["card"], width=20, anchor="w").pack(side="left")
+            
+            is_top3 = i < 3
+            m_txt = medals[i] if is_top3 else f"#{i+1}"
+            fg_col = colors[i] if is_top3 else C["text"]
+            
+            tk.Label(row, text=m_txt, font=("Segoe UI", 20, "bold"), bg=C["card"], fg=fg_col, width=5).pack(side="left")
+            tk.Label(row, text=r["name"], font=("Segoe UI", 18, "bold"), bg=C["card"], fg=fg_col, width=20, anchor="w").pack(side="left")
             tk.Label(row, text=fmt(r["ms"]), font=("Consolas", 20, "bold"), bg=C["card"], fg=C["accent"]).pack(side="right", padx=20)
 
         btn(main, "إعادة سباق جديد", self._page_setup, C["accent"], C["bg"], px=30, py=10).pack(pady=30)
+
+    def _animate_winner(self):
+        if not hasattr(self, 'lbl_win') or not self.lbl_win.winfo_exists(): return
+        colors = [C["gold"], "#FFEA00", "#FFC400", C["white"]]
+        current = self.lbl_win.cget("fg")
+        try:
+            nxt = colors[(colors.index(current) + 1) % len(colors)]
+        except:
+            nxt = C["gold"]
+        self.lbl_win.config(fg=nxt)
+        self.root.after(250, self._animate_winner)
 
     def _serial_loop(self):
         while self.connected and self.ser:
