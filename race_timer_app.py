@@ -8,7 +8,7 @@
 
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
-import threading, time, csv, os, sys, winsound, json, re
+import threading, time, csv, os, sys, winsound, json, re, urllib.request, webbrowser
 from datetime import datetime
 from PIL import Image, ImageTk
 
@@ -18,6 +18,11 @@ try:
     SERIAL_OK = True
 except ImportError:
     SERIAL_OK = False
+
+# إعدادات التحديث و GitHub (قم بتغيير USERNAME و REPO إلى بياناتك الحقيقية)
+APP_VERSION = "4.1"
+GITHUB_REPO_RAW = "https://raw.githubusercontent.com/USERNAME/REPO/main"
+GITHUB_REPO_URL = "https://github.com/USERNAME/REPO"
 
 # ═══════════════════════════════════════════════
 #  الألوان والخطوط (Legendary Theme)
@@ -198,8 +203,15 @@ class App:
         self._page_port()
         self._auto_reconnect_loop()
 
+    def _get_appdata_dir(self):
+        appdata = os.getenv('LOCALAPPDATA', os.path.expanduser('~'))
+        path = os.path.join(appdata, "NabtakirRaceTimer")
+        os.makedirs(path, exist_ok=True)
+        return path
+
     def _load_settings(self):
-        self.settings_file = resource_path("nabtakir_settings.json")
+        self.app_data_dir = self._get_appdata_dir()
+        self.settings_file = os.path.join(self.app_data_dir, "nabtakir_settings.json")
         self.settings = {
             "theme": "dark", 
             "port": "", 
@@ -222,7 +234,7 @@ class App:
         except: pass
 
     def _load_data(self):
-        self.data_file = resource_path("nabtakir_data.json")
+        self.data_file = os.path.join(self.app_data_dir, "nabtakir_data.json")
         try:
             if os.path.exists(self.data_file):
                 with open(self.data_file, "r", encoding="utf-8") as f:
@@ -403,8 +415,19 @@ class App:
         tk.Label(btns_aud, text=L("audio_win", self.lang), bg=C["card"], fg=C["muted"], font=("Segoe UI", 9)).pack(side="left", padx=(10, 0))
         tk.Button(btns_aud, text=s_win, bg=C["card2"], fg=C["text"], relief="flat", command=lambda: pick_sound("sound_win")).pack(side="left", padx=5)
 
+        # ====== GitHub Updates ======
+        sep3 = tk.Frame(card, bg=C["border"], height=1)
+        sep3.pack(fill="x", pady=(15, 10))
+        
+        upd_fr = tk.Frame(card, bg=C["card"])
+        upd_fr.pack(fill="x", pady=5)
+        
+        btn(upd_fr, "تحميل كود الأردوينو من GitHub", self._download_arduino, C["dim"], C["green"], px=10, py=6, font_size=9).pack(side="left", expand=True, padx=2)
+        btn(upd_fr, "التحقق من التحديثات", self._check_app_updates, C["dim"], C["accent"], px=10, py=6, font_size=9).pack(side="right", expand=True, padx=2)
+        # ==============================
+
         sep2 = tk.Frame(card, bg=C["border"], height=1)
-        sep2.pack(fill="x", pady=(15, 15))
+        sep2.pack(fill="x", pady=(10, 15))
         btn(card, L("demo", self.lang), self._demo_mode, C["dim"], C["muted"], px=20).pack()
         self._refresh()
 
@@ -700,6 +723,39 @@ class App:
         if self.current_page == self._page_race and not self.connected:
             if self.racing: self._demo_stop()
             else: self._on_start()
+
+    def _check_app_updates(self):
+        def task():
+            try:
+                url = f"{GITHUB_REPO_RAW}/version.txt"
+                req = urllib.request.Request(url, headers={'Cache-Control': 'no-cache'})
+                with urllib.request.urlopen(req, timeout=5) as response:
+                    latest = response.read().decode('utf-8').strip()
+                    if latest > APP_VERSION:
+                        res = messagebox.askyesno("تحديث جديد", f"يتوفر إصدار جديد ({latest}). هل ترغب في تحميله الآن من GitHub؟")
+                        if res: webbrowser.open(GITHUB_REPO_URL)
+                    else:
+                        messagebox.showinfo("التحديثات", "أنت تستخدم أحدث إصدار متاح حالياً.")
+            except Exception:
+                messagebox.showerror("خطأ", "تعذر الاتصال بـ GitHub للتحقق من التحديثات.")
+        threading.Thread(target=task, daemon=True).start()
+
+    def _download_arduino(self):
+        def task():
+            try:
+                url = f"{GITHUB_REPO_RAW}/arduino_code.ino"
+                req = urllib.request.Request(url, headers={'Cache-Control': 'no-cache'})
+                with urllib.request.urlopen(req, timeout=5) as response:
+                    code = response.read().decode('utf-8')
+                    desktop = os.path.join(os.path.expanduser("~"), "Desktop")
+                    save_path = os.path.join(desktop, "Nabtakir_Arduino.ino")
+                    with open(save_path, "w", encoding="utf-8") as f:
+                        f.write(code)
+                    messagebox.showinfo("نجاح", f"تم تحميل تحديث كود الأردوينو! تجده على سطح المكتب باسم:\nNabtakir_Arduino.ino")
+            except Exception:
+                res = messagebox.askyesno("تنبيه", "تعذر التحميل المباشر لكود الأردوينو من GitHub. هل تريد فتح صفحة المستودع بدلاً من ذلك؟")
+                if res: webbrowser.open(GITHUB_REPO_URL)
+        threading.Thread(target=task, daemon=True).start()
 
 if __name__ == "__main__":
     root = tk.Tk()
