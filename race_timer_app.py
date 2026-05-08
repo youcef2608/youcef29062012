@@ -61,7 +61,13 @@ class App:
         self.root = root
         self.root.title("Race Timer Pro")
         self.root.configure(bg=C["bg"])
-        self.root.geometry("980x700")
+
+        # توسيط النافذة في منتصف الشاشة بشكل احترافي
+        w, h = 980, 700
+        ws, hs = self.root.winfo_screenwidth(), self.root.winfo_screenheight()
+        x, y = int((ws/2) - (w/2)), int((hs/2) - (h/2) - 40)
+        self.root.geometry(f"{w}x{h}+{x}+{y}")
+
         self.root.minsize(820, 600)
 
         # Serial
