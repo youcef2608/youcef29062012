@@ -1,9 +1,9 @@
-# Python
-__pycache__/
-*.pyc
-
-# PyInstaller
+# PyInstaller folders and files
 build/
 dist/
 *.spec
 *.exe
+
+# Python cache and user data
+__pycache__/
+nabtakir_data.json
